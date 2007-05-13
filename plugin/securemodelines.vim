@@ -1,6 +1,6 @@
 " vim: set sw=4 sts=4 et ft=vim :
 " Script:           securemodelines.vim
-" Version:          20070429
+" Version:          20070513
 " Author:           Ciaran McCreesh <ciaranm@ciaranm.org>
 " Homepage:         http://ciaranm.org/tag/securemodelines
 " Requires:         Vim 7
@@ -10,21 +10,31 @@ if &compatible || v:version < 700
     finish
 endif
 
-if (exists("g:secure_modelines_allowed_items") ? 0 : 1)
+if (! exists("g:secure_modelines_allowed_items"))
     let g:secure_modelines_allowed_items = [
                 \ "textwidth",   "tw",
                 \ "softtabstop", "sts",
                 \ "tabstop",     "ts",
                 \ "shiftwidth",  "sw",
-                \ "expandtab",   "et",
+                \ "expandtab",   "et",   "noexpandtab", "noet",
                 \ "filetype",    "ft",
                 \ "foldmethod",  "fdm",
-                \ "readonly",    "ro",   "noreadonly", "noro"
+                \ "readonly",    "ro",   "noreadonly", "noro",
+                \ "rightleft",   "rl",   "norightleft", "norl"
                 \ ]
 endif
 
-if (exists("g:secure_modelines_verbose") ? 0 : 1)
+if (! exists("g:secure_modelines_verbose"))
     let g:secure_modelines_verbose = 0
+endif
+
+if &modeline
+    set nomodeline
+    if g:secure_modelines_verbose
+        echohl WarningMsg
+        echo "Forcibly disabling internal modelines for securemodelines.vim"
+        echohl None
+    endif
 endif
 
 fun! <SID>IsInList(list, i) abort
@@ -74,7 +84,7 @@ fun! <SID>CheckVersion(op, ver) abort
 endfun
 
 fun! <SID>DoModeline(line) abort
-    let l:matches = matchlist(a:line, '\%(\S\@<!\%(vi\|vim\([<>=]\?\)\([0-9]\+\)\?\)\|\sex\):\s\+set\?\s\+\([^:]\+\):')
+    let l:matches = matchlist(a:line, '\%(\S\@<!\%(vi\|vim\([<>=]\?\)\([0-9]\+\)\?\)\|\sex\):\s\+set\?\s\+\([^:]\+\):\S\@!')
     if len(l:matches) > 0
         let l:operator = ">"
         if len(l:matches[1]) > 0
@@ -88,7 +98,7 @@ fun! <SID>DoModeline(line) abort
         return <SID>DoSetModeline(l:matches[3])
     endif
 
-    let l:matches = matchlist(a:line, '\%(\S\@<!\%(vi\|vim\([<>=]\?\)\([0-9]\+\)\?\)\|\sex\):\(.*\)\s')
+    let l:matches = matchlist(a:line, '\%(\S\@<!\%(vi\|vim\([<>=]\?\)\([0-9]\+\)\?\)\|\sex\):\(.\+\)')
     if len(l:matches) > 0
         let l:operator = ">"
         if len(l:matches[1]) > 0
