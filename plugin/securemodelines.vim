@@ -1,9 +1,10 @@
 " vim: set sw=4 sts=4 et ft=vim :
 " Script:           securemodelines.vim
-" Version:          20070513
+" Version:          20070518
 " Author:           Ciaran McCreesh <ciaranm@ciaranm.org>
 " Homepage:         http://ciaranm.org/tag/securemodelines
 " Requires:         Vim 7
+" License:          Redistribute under the same terms as Vim itself
 " Purpose:          A secure alternative to modelines
 
 if &compatible || v:version < 700
@@ -28,12 +29,18 @@ if (! exists("g:secure_modelines_verbose"))
     let g:secure_modelines_verbose = 0
 endif
 
-if &modeline
-    set nomodeline
-    if g:secure_modelines_verbose
-        echohl WarningMsg
-        echo "Forcibly disabling internal modelines for securemodelines.vim"
-        echohl None
+if (! exists("g:secure_modelines_modelines"))
+    let g:secure_modelines_modelines=5
+endif
+
+if (! exists("g:secure_modelines_leave_modeline"))
+    if &modeline
+        set nomodeline
+        if g:secure_modelines_verbose
+            echohl WarningMsg
+            echo "Forcibly disabling internal modelines for securemodelines.vim"
+            echohl None
+        endif
     endif
 endif
 
@@ -114,8 +121,12 @@ fun! <SID>DoModeline(line) abort
 endfun
 
 fun! <SID>DoModelines() abort
-    if line("$") > 5
-        for l:line in getline(1, 5) + getline("$-5", "$")
+    if line("$") > g:secure_modelines_modelines
+        let l:lines={ }
+        call map(filter(getline(1, g:secure_modelines_modelines) +
+                    \ getline(line("$") - g:secure_modelines_modelines, "$"),
+                    \ 'v:val =~ ":"'), 'extend(l:lines, { v:val : 0 } )')
+        for l:line in keys(l:lines)
             call <SID>DoModeline(l:line)
         endfor
     else
@@ -123,6 +134,10 @@ fun! <SID>DoModelines() abort
             call <SID>DoModeline(l:line)
         endfor
     endif
+endfun
+
+fun! SecureModelines_DoModelines() abort
+    call <SID>DoModelines()
 endfun
 
 aug SecureModeLines
